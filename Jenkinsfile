@@ -6,6 +6,17 @@ pipeline {
     }
 
     stages {
+        stage('Initialize & Clean CSP') {
+            agent { label 'built-in' } // רץ על המאסטר כדי לשנות הגדרות מערכת
+            steps {
+                script {
+                    // פקודה זו משחררת את חסימת ה-CSP של ג'נקינס ומאפשרת לקישורים ב-HTML לעבוד
+                    System.setProperty("hudson.model.DirectoryBrowserSupport.CSP", "")
+                    echo "Jenkins CSP protection has been relaxed for HTML reports."
+                }
+            }
+        }
+
         stage('Run on selected agent') {
             agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
 
@@ -24,20 +35,21 @@ pipeline {
             }
 
             post {
-    always {
-        archiveArtifacts artifacts: 'pdf_reports/**, report.html', fingerprint: true
+                always {
+                    // ארכוב התוצרים
+                    archiveArtifacts artifacts: 'pdf_reports/**, report.html', fingerprint: true
 
-        publishHTML(target: [
-            reportName : "Reports",
-            reportDir  : ".",
-            reportFiles: "report.html",
-            keepAll    : true,
-            alwaysLinkToLastBuild: true,
-            allowMissing: false
-        ])
-    }
-}
-
+                    // פרסום דף ה-HTML
+                    publishHTML(target: [
+                        reportName : "Reports",
+                        reportDir  : ".",
+                        reportFiles: "report.html",
+                        keepAll    : true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing: false
+                    ])
+                }
+            }
         }
     }
 }
