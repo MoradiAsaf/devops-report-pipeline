@@ -33,6 +33,7 @@ excel_file = f"{run_date}.xlsx"
 
 logger = logging.getLogger("devops-report")
 logger.setLevel(logging.DEBUG)
+logger.handlers.clear()
 
 formatter = logging.Formatter(
     "%(asctime)s | %(levelname)-8s | %(message)s",
@@ -576,6 +577,7 @@ except Exception as e:
 
     
     
+
 
 
 
