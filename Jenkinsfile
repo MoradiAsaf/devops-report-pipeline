@@ -11,8 +11,13 @@ pipeline {
             agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
 
             steps {
+                // 🔥 ניקוי מלא של סביבת העבודה לפני הריצה
+                deleteDir()
+
+                // משיכת הקוד מחדש
                 checkout scm
 
+                // הרצת הסקריפט לפי מערכת הפעלה
                 script {
                     if (params.RUN_ON == 'windows') {
                         bat 'py -3 --version'
@@ -26,10 +31,10 @@ pipeline {
 
             post {
                 always {
-                    // ארכוב התוצרים
+                    // 📦 ארכוב כל הדוחות וה-HTML
                     archiveArtifacts artifacts: 'pdf_reports/**, report.html', fingerprint: true
 
-                    // פרסום דף ה-HTML
+                    // 🌐 פרסום דוח HTML בתוך Jenkins
                     publishHTML(target: [
                         reportName : "Reports",
                         reportDir  : ".",
