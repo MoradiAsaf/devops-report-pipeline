@@ -45,7 +45,7 @@ pipeline {
 
                 script {
                     if (params.RUN_ON == 'windows') {
-                        bat 'echo Workspace cleaned & repo checked out >> %LOG_FILE%'
+                        bat 'echo Workspace cleaned repo checked out >> %LOG_FILE%'
                     } else {
                         sh 'echo "Workspace cleaned & repo checked out" >> ${LOG_FILE}'
                     }
