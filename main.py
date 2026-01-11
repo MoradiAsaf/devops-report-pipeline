@@ -486,6 +486,8 @@ with open(master_final_path, "wb") as f:
 
 
 pdf_files = []
+pdf_files = sorted(pdf_files)
+
 
 if os.path.exists(daily_folder):
     for file in os.listdir(daily_folder):
@@ -497,6 +499,7 @@ create_html_report(pdf_files, success=True)
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
 
 
 
