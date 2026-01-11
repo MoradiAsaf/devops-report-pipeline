@@ -17,6 +17,7 @@ from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 import platform
 import argparse
 import sys
+from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--date", required=True, help="Date in format YYYY-MM-DD")
@@ -33,6 +34,8 @@ print(f" Using file: {excel_file}")
 
 
 
+
+
 def create_html_report(pdf_files, success=True):
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     system = platform.system()
@@ -40,13 +43,19 @@ def create_html_report(pdf_files, success=True):
     links = ""
     build_url = os.environ.get("BUILD_URL", "")
 
+    base_dir = Path("pdf_reports")
+
     for pdf in pdf_files:
-        filename = os.path.basename(pdf)
-        rel_path = pdf.replace("\\", "/")
-        link = f"{build_url}artifact/{rel_path}" if build_url else rel_path
-        links += f'<li><a href="{link}" target="_blank">{filename}</a></li>\n'
+        pdf_path = Path(pdf)
+        filename = pdf_path.name
 
+        # נתיב יחסי מתוך pdf_reports
+        rel_path = pdf_path.relative_to(base_dir).as_posix()
 
+        # קישור נכון ל-artifact
+        link = f"{build_url}artifact/pdf_reports/{rel_path}" if build_url else f"artifact/pdf_reports/{rel_path}"
+
+        links += f'<li><a href="{link}" target="_blank" rel="noopener noreferrer">{filename}</a></li>\n'
 
     html_content = f"""
 <!DOCTYPE html>
@@ -54,10 +63,14 @@ def create_html_report(pdf_files, success=True):
 <head>
     <meta charset="UTF-8">
     <title>DevOps Report</title>
+
+    <!-- עוקף מגבלות קליקים של Jenkins -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
 </head>
 <body>
     <h1>📊 Report System - Jenkins Run</h1>
-    <p><b>Status:</b> {"SUCCESS ✅" if success else "FAILED ❌"}</p>
+    <p><b>Status:</b> {"SUCCESS" if success else "FAILED"}</p>
     <p><b>Date:</b> {now}</p>
     <p><b>System:</b> {system}</p>
 
@@ -71,6 +84,7 @@ def create_html_report(pdf_files, success=True):
 
     with open("report.html", "w", encoding="utf-8") as f:
         f.write(html_content)
+
 
 
 # === רישום פונט עברי ===
@@ -515,6 +529,7 @@ create_html_report(pdf_files, success=True)
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
 
 
 
