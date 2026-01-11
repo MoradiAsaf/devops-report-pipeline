@@ -6,16 +6,6 @@ pipeline {
     }
 
     stages {
-        stage('Initialize & Clean CSP') {
-            agent { label 'built-in' } // רץ על המאסטר כדי לשנות הגדרות מערכת
-            steps {
-                script {
-                    // פקודה זו משחררת את חסימת ה-CSP של ג'נקינס ומאפשרת לקישורים ב-HTML לעבוד
-                    System.setProperty("hudson.model.DirectoryBrowserSupport.CSP", "")
-                    echo "Jenkins CSP protection has been relaxed for HTML reports."
-                }
-            }
-        }
 
         stage('Run on selected agent') {
             agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
