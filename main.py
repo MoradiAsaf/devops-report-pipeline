@@ -64,6 +64,7 @@ def create_html_report(pdf_files, success=True):
 <head>
     <meta charset="UTF-8">
     <title>DevOps Report</title>
+    <base target="_blank">
 
     <meta http-equiv="Content-Security-Policy"
           content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
@@ -528,6 +529,7 @@ create_html_report(pdf_files, success=True)
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
 
 
 
