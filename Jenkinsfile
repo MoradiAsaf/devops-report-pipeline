@@ -64,11 +64,11 @@ pipeline {
                 script {
                     if (params.RUN_ON == 'windows') {
                         bat """
-                        py -3 main.py --date %RUN_DATE% --log-file %LOG_FILE% >> %LOG_FILE% 2>&1
+                        py -3 main.py --date %RUN_DATE% --log-file %LOG_FILE%
                         """
                     } else {
                         sh """
-                        python3 main.py --date ${RUN_DATE} --log-file ${LOG_FILE} 2>&1 | tee -a ${LOG_FILE}
+                       python3 main.py --date ${RUN_DATE} --log-file ${LOG_FILE}
                         """
                     }
                 }
