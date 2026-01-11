@@ -42,7 +42,7 @@ def create_html_report(pdf_files, success=True):
 
     links = ""
     build_url = os.environ.get("BUILD_URL", "").rstrip("/")
-
+    pdf_files = sorted(pdf_files)
     for pdf in pdf_files:
         pdf_path = Path(pdf)
         filename = pdf_path.name
@@ -516,7 +516,7 @@ with open(master_final_path, "wb") as f:
 
 
 pdf_files = []
-pdf_files = sorted(pdf_files)
+
 
 
 if os.path.exists(daily_folder):
@@ -529,6 +529,7 @@ create_html_report(pdf_files, success=True)
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
 
 
 
