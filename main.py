@@ -13,6 +13,42 @@ import re
 import ctypes
 from reportlab.platypus import Flowable
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+import platform
+
+
+def create_html_report(pdf_files, success=True):
+    now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    system = platform.system()
+
+    links = ""
+    for pdf in pdf_files:
+        filename = os.path.basename(pdf)
+        links += f'<li><a href="{filename}" download>{filename}</a></li>\n'
+
+    html_content = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DevOps Report</title>
+</head>
+<body>
+    <h1>📊 Report System - Jenkins Run</h1>
+    <p><b>Status:</b> {"SUCCESS ✅" if success else "FAILED ❌"}</p>
+    <p><b>Date:</b> {now}</p>
+    <p><b>System:</b> {system}</p>
+
+    <h2>Generated reports:</h2>
+    <ul>
+        {links}
+    </ul>
+</body>
+</html>
+"""
+
+    with open("report.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+
 
 # === רישום פונט עברי ===
 pdfmetrics.registerFont(TTFont('Arial', 'resources/Arial.ttf'))
@@ -442,7 +478,16 @@ with open(master_final_path, "wb") as f:
     master_writer.write(f)
 
 
+pdf_files = []
+
+if os.path.exists(daily_folder):
+    for file in os.listdir(daily_folder):
+        if file.lower().endswith(".pdf"):
+            pdf_files.append(os.path.join(daily_folder, file))
+
+create_html_report(pdf_files, success=True)
 
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
