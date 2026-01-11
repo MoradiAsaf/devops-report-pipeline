@@ -2,16 +2,15 @@ pipeline {
     agent none 
 
     parameters {
-        choice(name: 'RUN_ON', choices: ['linux', 'windows'], description: 'Choose execution environment [cite: 48]')
-        string(name: 'REPORT_DATE', defaultValue: '11-01-2026', description: 'Enter date (DD-MM-YYYY) [cite: 37]')
+        choice(name: 'RUN_ON', choices: ['linux', 'windows'], description: 'Choose execution environment')
+        string(name: 'REPORT_DATE', defaultValue: '11-01-2026', description: 'Enter date (DD-MM-YYYY)')
     }
 
     stages {
         stage('Initialize & CSP Fix') {
-            agent { label 'built-in' } // ריצה על המאסטר [cite: 21]
+            agent { label 'built-in' }
             steps {
                 script {
-                    // שחרור חסימת האבטחה להצגת HTML [cite: 40]
                     System.setProperty("hudson.model.DirectoryBrowserSupport.CSP", "")
                 }
             }
@@ -20,7 +19,7 @@ pipeline {
         stage('Checkout') {
             agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
             steps {
-                checkout scm // משיכת קוד מ-GitHub [cite: 15, 51]
+                checkout scm
             }
         }
 
@@ -28,12 +27,11 @@ pipeline {
             agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
             steps {
                 script {
-                    // וולידציה של הפרמטרים - דרישה של 10% מהציון [cite: 39, 52]
                     if (params.REPORT_DATE == "") {
-                        error "Validation Failed: REPORT_DATE is missing [cite: 61]"
+                        error "Validation Failed: REPORT_DATE is missing"
                     }
                     
-                    echo "Cleaning previous reports... [cite: 41]"
+                    echo "Cleaning previous reports..." [cite: 41]
                     if (params.RUN_ON == 'windows') {
                         bat 'if exist pdf_reports rmdir /s /q pdf_reports'
                         bat 'if exist report.html del report.html'
@@ -48,7 +46,6 @@ pipeline {
             agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
             steps {
                 script {
-                    // הרצת התסריט ויצירת הפלט - דרישה של 30% [cite: 53, 54]
                     if (params.RUN_ON == 'windows') {
                         bat "py -3 main.py --date ${params.REPORT_DATE}"
                     } else {
@@ -59,21 +56,23 @@ pipeline {
         }
     }
 
+    // התיקון כאן: הוספת agent לבלוק ה-post כדי שיוכל לגשת לקבצים
     post {
         always {
-            script {
-                // ארכוב קבצים ולוגים - חובה לפי סעיף 4.1 [cite: 42]
-                archiveArtifacts artifacts: 'pdf_reports/**, report.html, *.log', fingerprint: true
-                
-                // פרסום הדוח ב-Jenkins UI [cite: 13, 99]
-                publishHTML(target: [
-                    reportName : "Final Reports Output",
-                    reportDir  : ".",
-                    reportFiles: "report.html",
-                    keepAll    : true,
-                    alwaysLinkToLastBuild: true,
-                    allowMissing: false
-                ])
+            node(params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in') {
+                script {
+                    // ארכוב תוצרים ולוגים כפי שנדרש בסעיף 4.1
+                    archiveArtifacts artifacts: 'pdf_reports/**, report.html, *.log', fingerprint: true [cite: 42]
+                    
+                    publishHTML(target: [
+                        reportName : "Final Reports Output",
+                        reportDir  : ".",
+                        reportFiles: "report.html",
+                        keepAll    : true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing: false
+                    ])
+                }
             }
         }
     }
