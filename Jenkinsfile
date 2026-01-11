@@ -24,10 +24,20 @@ pipeline {
             }
 
             post {
-                always {
-                    archiveArtifacts artifacts: '**/*.pdf, **/*.html, **/*.log', fingerprint: true, allowEmptyArchive: true
-                }
-            }
+    always {
+        archiveArtifacts artifacts: 'pdf_reports/**, report.html', fingerprint: true
+
+        publishHTML(target: [
+            reportName : "Reports",
+            reportDir  : ".",
+            reportFiles: "report.html",
+            keepAll    : true,
+            alwaysLinkToLastBuild: true,
+            allowMissing: false
+        ])
+    }
+}
+
         }
     }
 }
