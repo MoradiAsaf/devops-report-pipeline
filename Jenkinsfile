@@ -3,6 +3,7 @@ pipeline {
 
     parameters {
         choice(name: 'RUN_ON', choices: ['linux', 'windows'], description: 'Choose where to run the pipeline')
+        // ⚠️ RUN_DATE מגיע מ-Active Choices – לא מגדירים אותו כאן
     }
 
     stages {
@@ -17,14 +18,14 @@ pipeline {
                 // משיכת הקוד מחדש
                 checkout scm
 
-                // הרצת הסקריפט לפי מערכת הפעלה
+                // הרצת הסקריפט לפי מערכת הפעלה + שליחת תאריך
                 script {
                     if (params.RUN_ON == 'windows') {
                         bat 'py -3 --version'
-                        bat 'py -3 main.py'
+                        bat "py -3 main.py --date %RUN_DATE%"
                     } else {
                         sh 'python3 --version'
-                        sh 'python3 main.py'
+                        sh "python3 main.py --date ${RUN_DATE}"
                     }
                 }
             }

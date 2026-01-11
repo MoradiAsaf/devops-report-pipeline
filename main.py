@@ -15,6 +15,22 @@ import ctypes
 from reportlab.platypus import Flowable
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 import platform
+import argparse
+import sys
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--date", required=True, help="Date in format YYYY-MM-DD")
+args = parser.parse_args()
+
+run_date = args.date
+excel_file = f"{run_date}.xlsx"
+
+if not os.path.exists(excel_file):
+    print(f"❌ File not found: {excel_file}")
+    sys.exit(1)
+
+print(f"✅ Using file: {excel_file}")
+
 
 
 def create_html_report(pdf_files, success=True):
@@ -62,7 +78,7 @@ pdfmetrics.registerFont(TTFont('Arial', 'resources/Arial.ttf'))
 
 
 # === קריאת קבצים ===
-df = pd.read_excel("data.xlsx", dtype={"name": str}) #הקובץ היומי של חיובי הזכיינים
+df = pd.read_excel(excel_file, dtype={"name": str}) #הקובץ היומי של חיובי הזכיינים
 df["productid"] = df["productid"].astype(str).str.strip()     #המרת מספר המוצר למחרוזת
 df["linename"] = df["linename"].astype(str).str.strip()
 
@@ -109,7 +125,7 @@ hebrew_style = ParagraphStyle(
 )
 
 # === קריאת תאריך מתוך K2 ===
-data_date = pd.read_excel("data.xlsx", header=None).iloc[1, 10]
+data_date = pd.read_excel(excel_file, header=None).iloc[1, 10]
 today = pd.to_datetime(data_date).strftime("%d/%m/%Y")
 today_file_name = today.replace("/", "-")
 
