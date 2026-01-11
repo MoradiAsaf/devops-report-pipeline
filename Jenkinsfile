@@ -7,8 +7,8 @@ pipeline {
     }
 
     environment {
-        LOG_DIR = "logs"
-        LOG_FILE = "logs/run_%BUILD_NUMBER%.log"
+        LOG_DIR  = "logs"
+        LOG_FILE = "logs/run_${BUILD_NUMBER}.log"
     }
 
     stages {
@@ -18,6 +18,13 @@ pipeline {
 
             steps {
 
+                // 🔥 ניקוי מלא של סביבת העבודה לפני הריצה
+                deleteDir()
+
+                // משיכת הקוד מחדש
+                checkout scm
+
+                // ===== יצירת לוג אחרי הניקוי =====
                 script {
                     if (params.RUN_ON == 'windows') {
                         bat """
@@ -36,38 +43,31 @@ pipeline {
                     }
                 }
 
-                // 🔥 ניקוי סביבת עבודה
-                deleteDir()
-
                 script {
                     if (params.RUN_ON == 'windows') {
-                        bat 'echo Workspace cleaned >> %LOG_FILE%'
+                        bat 'echo Workspace cleaned & repo checked out >> %LOG_FILE%'
                     } else {
-                        sh 'echo "Workspace cleaned" >> ${LOG_FILE}'
+                        sh 'echo "Workspace cleaned & repo checked out" >> ${LOG_FILE}'
                     }
                 }
 
-                // משיכת הקוד
-                checkout scm
-
+                // ===== בדיקת פייתון =====
                 script {
                     if (params.RUN_ON == 'windows') {
-                        bat 'echo Git checkout done >> %LOG_FILE%'
+                        bat 'py -3 --version >> %LOG_FILE% 2>&1'
                     } else {
-                        sh 'echo "Git checkout done" >> ${LOG_FILE}'
+                        sh 'python3 --version | tee -a ${LOG_FILE}'
                     }
                 }
 
-                // הרצת הסקריפט
+                // ===== הרצת הסקריפט =====
                 script {
                     if (params.RUN_ON == 'windows') {
                         bat """
-                        py -3 --version >> %LOG_FILE% 2>&1
                         py -3 main.py --date %RUN_DATE% --log-file %LOG_FILE% >> %LOG_FILE% 2>&1
                         """
                     } else {
                         sh """
-                        python3 --version | tee -a ${LOG_FILE}
                         python3 main.py --date ${RUN_DATE} --log-file ${LOG_FILE} 2>&1 | tee -a ${LOG_FILE}
                         """
                     }
@@ -77,6 +77,7 @@ pipeline {
             post {
                 always {
 
+                    // ===== סיום לוג =====
                     script {
                         if (params.RUN_ON == 'windows') {
                             bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
