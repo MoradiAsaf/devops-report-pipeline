@@ -6,36 +6,89 @@ pipeline {
         // ⚠️ RUN_DATE מגיע מ-Active Choices – לא מגדירים אותו כאן
     }
 
+    environment {
+        LOG_DIR = "logs"
+        LOG_FILE = "logs/run_%BUILD_NUMBER%.log"
+    }
+
     stages {
 
         stage('Run on selected agent') {
             agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
 
             steps {
-                // 🔥 ניקוי מלא של סביבת העבודה לפני הריצה
-                deleteDir()
 
-                // משיכת הקוד מחדש
-                checkout scm
-
-                // הרצת הסקריפט לפי מערכת הפעלה + שליחת תאריך
                 script {
                     if (params.RUN_ON == 'windows') {
-                        bat 'py -3 --version'
-                        bat "py -3 main.py --date %RUN_DATE%"
+                        bat """
+                        if not exist %LOG_DIR% mkdir %LOG_DIR%
+                        echo ===== PIPELINE START ===== > %LOG_FILE%
+                        echo Build: %BUILD_NUMBER% >> %LOG_FILE%
+                        echo Date: %DATE% %TIME% >> %LOG_FILE%
+                        """
                     } else {
-                        sh 'python3 --version'
-                        sh "python3 main.py --date ${RUN_DATE}"
+                        sh """
+                        mkdir -p ${LOG_DIR}
+                        echo "===== PIPELINE START =====" > ${LOG_FILE}
+                        echo "Build: ${BUILD_NUMBER}" >> ${LOG_FILE}
+                        date >> ${LOG_FILE}
+                        """
+                    }
+                }
+
+                // 🔥 ניקוי סביבת עבודה
+                deleteDir()
+
+                script {
+                    if (params.RUN_ON == 'windows') {
+                        bat 'echo Workspace cleaned >> %LOG_FILE%'
+                    } else {
+                        sh 'echo "Workspace cleaned" >> ${LOG_FILE}'
+                    }
+                }
+
+                // משיכת הקוד
+                checkout scm
+
+                script {
+                    if (params.RUN_ON == 'windows') {
+                        bat 'echo Git checkout done >> %LOG_FILE%'
+                    } else {
+                        sh 'echo "Git checkout done" >> ${LOG_FILE}'
+                    }
+                }
+
+                // הרצת הסקריפט
+                script {
+                    if (params.RUN_ON == 'windows') {
+                        bat """
+                        py -3 --version >> %LOG_FILE% 2>&1
+                        py -3 main.py --date %RUN_DATE% --log-file %LOG_FILE% >> %LOG_FILE% 2>&1
+                        """
+                    } else {
+                        sh """
+                        python3 --version | tee -a ${LOG_FILE}
+                        python3 main.py --date ${RUN_DATE} --log-file ${LOG_FILE} 2>&1 | tee -a ${LOG_FILE}
+                        """
                     }
                 }
             }
 
             post {
                 always {
-                    // 📦 ארכוב כל הדוחות וה-HTML
-                    archiveArtifacts artifacts: 'pdf_reports/**, report.html', fingerprint: true
 
-                    // 🌐 פרסום דוח HTML בתוך Jenkins
+                    script {
+                        if (params.RUN_ON == 'windows') {
+                            bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
+                        } else {
+                            sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
+                        }
+                    }
+
+                    // 📦 ארכוב דוחות + לוגים
+                    archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
+
+                    // 🌐 פרסום דוח HTML
                     publishHTML(target: [
                         reportName : "Reports",
                         reportDir  : ".",
