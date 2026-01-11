@@ -23,8 +23,8 @@ def create_html_report(pdf_files, success=True):
 
     links = ""
     for pdf in pdf_files:
-        filename = os.path.basename(pdf)
-        links += f'<li><a href="{filename}" download>{filename}</a></li>\n'
+    filename = os.path.basename(pdf)
+    links += f'<li><a href="pdfreports/{filename}" target="_blank">{filename}</a></li>\n'
 
     html_content = f"""
 <!DOCTYPE html>
@@ -491,5 +491,6 @@ create_html_report(pdf_files, success=True)
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
 
 
