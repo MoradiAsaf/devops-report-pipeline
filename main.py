@@ -55,7 +55,7 @@ def create_html_report(pdf_files, success=True):
         # קישור נכון ל-artifact
         link = f"{build_url}artifact/pdf_reports/{rel_path}" if build_url else f"artifact/pdf_reports/{rel_path}"
 
-        links += f'<li><a href="{link}" target="_blank" rel="noopener noreferrer">{filename}</a></li>\n'
+        links += f'<li><a href="{link}" target="_top" rel="noopener noreferrer">{filename}</a></li>\n'
 
     html_content = f"""
 <!DOCTYPE html>
@@ -529,6 +529,7 @@ create_html_report(pdf_files, success=True)
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
 
 
 
