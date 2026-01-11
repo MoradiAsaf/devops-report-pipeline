@@ -22,15 +22,14 @@ def create_html_report(pdf_files, success=True):
     system = platform.system()
 
     links = ""
+    build_url = os.environ.get("BUILD_URL", "")
+
     for pdf in pdf_files:
         filename = os.path.basename(pdf)
-        safe_path = f"{daily_folder}/{filename}".replace("\\", "/")
-        links += (
-        f'<li><a href="{safe_path}" '
-        f'target="_blank" rel="noopener noreferrer" '
-        f'onclick="window.open(this.href, \'_blank\'); return false;">'
-        f'{filename}</a></li>\n'
-        )
+        rel_path = pdf.replace("\\", "/")
+        link = f"{build_url}artifact/{rel_path}" if build_url else rel_path
+        links += f'<li><a href="{link}" target="_blank">{filename}</a></li>\n'
+
 
 
     html_content = f"""
@@ -498,6 +497,7 @@ create_html_report(pdf_files, success=True)
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
 
 
 
