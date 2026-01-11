@@ -25,7 +25,12 @@ def create_html_report(pdf_files, success=True):
     for pdf in pdf_files:
         filename = os.path.basename(pdf)
         safe_path = f"{daily_folder}/{filename}".replace("\\", "/")
-        links += f'<li><a href="artifact/{safe_path}" target="_blank" rel="noopener noreferrer">{filename}</a></li>\n'
+        links += (
+        f'<li><a href="{safe_path}" '
+        f'target="_blank" rel="noopener noreferrer" '
+        f'onclick="window.open(this.href, \'_blank\'); return false;">'
+        f'{filename}</a></li>\n'
+        )
 
 
     html_content = f"""
@@ -493,6 +498,7 @@ create_html_report(pdf_files, success=True)
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
 
 
 
