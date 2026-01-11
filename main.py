@@ -26,10 +26,10 @@ run_date = args.date
 excel_file = f"{run_date}.xlsx"
 
 if not os.path.exists(excel_file):
-    print(f"❌ File not found: {excel_file}")
+    print(f" File not found: {excel_file}")
     sys.exit(1)
 
-print(f"✅ Using file: {excel_file}")
+print(f" Using file: {excel_file}")
 
 
 
@@ -515,6 +515,7 @@ create_html_report(pdf_files, success=True)
 
 # ✅ פתיחת התיקייה
 #os.startfile(daily_folder)
+
 
 
 
