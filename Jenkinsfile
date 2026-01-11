@@ -1,71 +1,47 @@
 pipeline {
-    agent none 
+    agent none
 
     parameters {
-        choice(name: 'RUN_ON', choices: ['linux', 'windows'], description: 'Choose execution environment')
-        string(name: 'REPORT_DATE', defaultValue: '11-01-2026', description: 'Enter date (DD-MM-YYYY)')
+        choice(name: 'RUN_ON', choices: ['linux', 'windows'], description: 'Choose where to run the pipeline')
     }
 
     stages {
-        stage('Initialize & CSP Fix') {
-            agent { label 'built-in' }
+        stage('Initialize & Clean CSP') {
+            agent { label 'built-in' } // רץ על המאסטר כדי לשנות הגדרות מערכת
             steps {
                 script {
+                    // פקודה זו משחררת את חסימת ה-CSP של ג'נקינס ומאפשרת לקישורים ב-HTML לעבוד
                     System.setProperty("hudson.model.DirectoryBrowserSupport.CSP", "")
+                    echo "Jenkins CSP protection has been relaxed for HTML reports."
                 }
             }
         }
 
-        stage('Checkout') {
+        stage('Run on selected agent') {
             agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
+
             steps {
                 checkout scm
-            }
-        }
 
-        stage('Cleanup & Validate') {
-            agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
-            steps {
                 script {
-                    if (params.REPORT_DATE == "") {
-                        error "Validation Failed: REPORT_DATE is missing"
-                    }
-                    
-                    echo "Cleaning previous reports..." [cite: 41]
                     if (params.RUN_ON == 'windows') {
-                        bat 'if exist pdf_reports rmdir /s /q pdf_reports'
-                        bat 'if exist report.html del report.html'
+                        bat 'py -3 --version'
+                        bat 'py -3 main.py'
                     } else {
-                        sh 'rm -rf pdf_reports report.html'
+                        sh 'python3 --version'
+                        sh 'python3 main.py'
                     }
                 }
             }
-        }
 
-        stage('Run Script') {
-            agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
-            steps {
-                script {
-                    if (params.RUN_ON == 'windows') {
-                        bat "py -3 main.py --date ${params.REPORT_DATE}"
-                    } else {
-                        sh "python3 main.py --date ${params.REPORT_DATE}"
-                    }
-                }
-            }
-        }
-    }
+            post {
+                always {
+                    // ארכוב התוצרים
+                    archiveArtifacts artifacts: 'pdf_reports/**, report.html', fingerprint: true
 
-    // התיקון כאן: הוספת agent לבלוק ה-post כדי שיוכל לגשת לקבצים
-    post {
-        always {
-            node(params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in') {
-                script {
-                    // ארכוב תוצרים ולוגים כפי שנדרש בסעיף 4.1
-                    archiveArtifacts artifacts: 'pdf_reports/**, report.html, *.log', fingerprint: true [cite: 42]
-                    
+                    // פרסום דף ה-HTML
                     publishHTML(target: [
-                        reportName : "Final Reports Output",
+                        reportName : "Reports",
                         reportDir  : ".",
                         reportFiles: "report.html",
                         keepAll    : true,
