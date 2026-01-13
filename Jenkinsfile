@@ -3,7 +3,7 @@ pipeline {
 
     parameters {
         choice(name: 'RUN_ON', choices: ['linux', 'windows'], description: 'Choose where to run the pipeline')
-        string(name: 'REPORT_EMAIL', defaultValue: 'moradiasaf@gmail.com', description: 'Mail to send report to')
+        string(name: 'REPORT_EMAIL', defaultValue: '', description: 'Mail to send report to')
     }
 
     environment {
