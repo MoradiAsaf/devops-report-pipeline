@@ -3,7 +3,7 @@ pipeline {
 
     parameters {
         choice(name: 'RUN_ON', choices: ['linux', 'windows'], description: 'Choose where to run the pipeline')
-        // ⚠️ RUN_DATE מגיע מ-Active Choices – לא מגדירים אותו כאן
+        string(name: 'REPORT_EMAIL', defaultValue: 'moradiasaf@gmail.com', description: 'Mail to send report to')
     }
 
     environment {
@@ -101,6 +101,17 @@ pipeline {
                     ])
                 }
             }
+            post {
+                always {
+                    emailext(
+                        to: "${params.REPORT_EMAIL}",
+                        subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER} - ${currentBuild.currentResult}",
+                        mimeType: 'text/html',
+                        body: '${FILE,path="report.html"}'
+                    )
+                }
+                }
+
         }
     }
 }
