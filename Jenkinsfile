@@ -153,8 +153,8 @@ pipeline {
                                 bat "echo [MAIL] Sending final report email to: ${env.MAIL_VALUE} >> %LOG_FILE%"
                             } else {
                                 sh "echo \"[MAIL] Sending final report email to: ${env.MAIL_VALUE}\" | tee -a ${LOG_FILE}"
-                            }
-                            def reportUrl = "${env.BUILD_URL}HTML_20Report/"
+                            
+                            def reportUrl = "${env.PUBLIC_BASE_URL}/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/HTML_20Report/"}
 
                                 echo "📧 Sending report link to: ${env.MAIL_VALUE}"
 
