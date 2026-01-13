@@ -154,19 +154,17 @@ pipeline {
                             } else {
                                 sh "echo \"[MAIL] Sending final report email to: ${env.MAIL_VALUE}\" | tee -a ${LOG_FILE}"
                             }
-                            if (params.RUN_ON == 'windows') {
-                                bat "dir report.html" 
-                            } else {
-                                sh "ls -l report.html"
-                            }
+                            def reportUrl = "${env.BUILD_URL}HTML_20Report/"
 
-                           mail (
-                            to: env.MAIL_VALUE,
-                            subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER}",
-                            body: "The pipeline run #${BUILD_NUMBER} has finished with status: ${currentBuild.currentResult}.\nPlease find the attached report for full details.",
-                            from: "moradiasaf@gmail.com",
-                            attachmentsPattern: '**/report.html' 
-                        )
+                                echo "📧 Sending report link to: ${env.MAIL_VALUE}"
+
+                                mail (
+                                    to: env.MAIL_VALUE,
+                                    from: "moradiasaf@gmail.com",
+                                    subject: "Tasty Morning Report: Build #${BUILD_NUMBER} is ${currentBuild.currentResult}",
+                                    body: """The pipeline run #${BUILD_NUMBER} has finished with status: ${currentBuild.currentResult}.
+                        Please find the report here for full details: ${reportUrl}""",
+                                )
                         }
                     }
                 }
