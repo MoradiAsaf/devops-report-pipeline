@@ -95,38 +95,40 @@ pipeline {
 
     post {
         always {
+            node(params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in') {
 
-            script {
-                if (params.RUN_ON == 'windows') {
-                    bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
-                } else {
-                    sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
+                script {
+                    if (params.RUN_ON == 'windows') {
+                        bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
+                    } else {
+                        sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
+                    }
                 }
-            }
 
-            archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
+                archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
 
-            publishHTML(target: [
-                reportName : "Reports",
-                reportDir  : ".",
-                reportFiles: "report.html",
-                keepAll    : true,
-                alwaysLinkToLastBuild: true,
-                allowMissing: false
-            ])
+                publishHTML(target: [
+                    reportName : "Reports",
+                    reportDir  : ".",
+                    reportFiles: "report.html",
+                    keepAll    : true,
+                    alwaysLinkToLastBuild: true,
+                    allowMissing: false
+                ])
 
-            script {
-                if (env.MAIL_OK == "true") {
+                script {
+                    if (env.MAIL_OK == "true") {
 
-                    def reportUrl = "${env.PUBLIC_BASE_URL}/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/Reports/"
+                        def reportUrl = "${env.PUBLIC_BASE_URL}/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/Reports/"
 
-                    mail (
-                        to: env.MAIL_VALUE,
-                        from: "moradiasaf@gmail.com",
-                        subject: "Jenkins Report: Build #${BUILD_NUMBER} is ${currentBuild.currentResult}",
-                        body: """The pipeline run #${BUILD_NUMBER} has finished with status: ${currentBuild.currentResult}.
+                        mail (
+                            to: env.MAIL_VALUE,
+                            from: "moradiasaf@gmail.com",
+                            subject: "Jenkins Report: Build #${BUILD_NUMBER} is ${currentBuild.currentResult}",
+                            body: """The pipeline run #${BUILD_NUMBER} has finished with status: ${currentBuild.currentResult}.
 Report link: ${reportUrl}"""
-                    )
+                        )
+                    }
                 }
             }
         }
