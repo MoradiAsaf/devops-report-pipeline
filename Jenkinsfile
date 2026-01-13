@@ -158,8 +158,9 @@ pipeline {
                            mail (
                             to: env.MAIL_VALUE,
                             subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER}",
-                            body: "היי אסף, הפייפליין של 'טרי על הבוקר' הסתיים בהצלחה.\n\nסטטוס: ${currentBuild.currentResult}\nניתן לראות את הדוחות המצורפים בתוך ג'נקינס.",
-                            from: "moradiasaf@gmail.com"
+                            body: "The pipeline run #${BUILD_NUMBER} has finished with status: ${currentBuild.currentResult}.\nPlease find the attached report for full details.",
+                            from: "moradiasaf@gmail.com",
+                            attachmentsPattern: 'report.html' 
                         )
                         }
                     }
