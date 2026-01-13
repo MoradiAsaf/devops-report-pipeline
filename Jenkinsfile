@@ -156,7 +156,7 @@ pipeline {
                             
                             }
 
-                            def reportUrl = "${env.PUBLIC_BASE_URL}/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/HTML_20Report/"
+                            def reportUrl = "${env.PUBLIC_BASE_URL}/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/Reports/"
 
                                 echo "📧 Sending report link to: ${env.MAIL_VALUE}"
 
