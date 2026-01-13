@@ -68,39 +68,67 @@ if not os.path.exists(excel_file):
 logger.info(f"Using file: {excel_file}")
 
 
-def create_html_report(pdf_files, success=True):
+def create_html_report(pdf_files, log_file=None, success=True):
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     system = platform.system()
 
     links = ""
 
-    # משתני סביבה מג'נקינס
     build_url = os.environ.get("BUILD_URL", "").rstrip("/")
     public_base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
 
-    # חילוץ הנתיב של ה-job מה-BUILD_URL
     job_path = ""
     if "/job" in build_url:
-        job_path = build_url.split("/job", 1)[1]  # למשל: /devops-report-pipeline/52
+        job_path = build_url.split("/job", 1)[1]
 
-    # אם יש ngrok – נשתמש בו, אחרת ניפול חזרה ל-BUILD_URL
     base_url = public_base or build_url
 
     pdf_files = sorted(pdf_files)
 
+    # ---------- PDF LINKS ----------
     for pdf in pdf_files:
         pdf_path = Path(pdf)
         filename = pdf_path.name
         rel_path = pdf_path.as_posix()
 
-        # בניית קישור תקני ל-artifact
         if job_path:
             link = f"{base_url}/job{job_path}/artifact/{rel_path}"
         else:
-            link = f"{base_url}/artifact/{rel_path}" if base_url else f"artifact/{rel_path}"
+            link = f"{base_url}/artifact/{rel_path}" if base_url else rel_path
 
-        links += f'<li><a href="{link}" target="_blank" rel="noopener noreferrer">{filename}</a></li>\n'
+        links += f'<li><a href="{link}" target="_blank">{filename}</a></li>\n'
 
+    # ---------- LOG FILE ----------
+    log_link_html = ""
+    log_preview_html = ""
+
+    if log_file and os.path.exists(log_file):
+        log_path = Path(log_file)
+        rel_log_path = log_path.as_posix()
+
+        if job_path:
+            log_link = f"{base_url}/job{job_path}/artifact/{rel_log_path}"
+        else:
+            log_link = f"{base_url}/artifact/{rel_log_path}" if base_url else rel_log_path
+
+        log_link_html = f'<p><b>📄 Log file:</b> <a href="{log_link}" target="_blank">{log_path.name}</a></p>'
+
+        # קריאת 300 שורות אחרונות לתצוגה
+        try:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                lines = f.readlines()[-300:]
+                log_text = "".join(lines)
+
+            log_preview_html = f"""
+            <h2>📜 Log preview (last lines)</h2>
+            <pre style="background:#111;color:#0f0;padding:12px;border-radius:8px;max-height:400px;overflow:auto;">
+            {log_text}
+            </pre>
+            """
+        except Exception as e:
+            log_preview_html = f"<p>⚠️ Could not read log file: {e}</p>"
+
+    # ---------- HTML ----------
     html_content = f"""<!DOCTYPE html>
 <html lang="he">
 <head>
@@ -114,10 +142,15 @@ def create_html_report(pdf_files, success=True):
     <p><b>Date:</b> {now}</p>
     <p><b>System:</b> {system}</p>
 
+    {log_link_html}
+
     <h2>Generated reports:</h2>
     <ul>
         {links}
     </ul>
+
+    {log_preview_html}
+
 </body>
 </html>
 """
@@ -566,7 +599,10 @@ try:
             if file.lower().endswith(".pdf"):
                 pdf_files.append(os.path.join(daily_folder, file))
     
-    create_html_report(pdf_files, success=True)
+    build_number = os.environ.get("BUILD_NUMBER", "0")
+    log_file = f"logs/run_{build_number}.log"
+
+    create_html_report(pdf_files, log_file=log_file, success=True)
     
     
     # ✅ פתיחת התיקייה
