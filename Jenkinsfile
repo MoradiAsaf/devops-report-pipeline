@@ -18,7 +18,7 @@ pipeline {
 
             steps {
 
-                // 🔥 ניקוי מלא של סביבת העבודה לפני הריצה
+                //  ניקוי מלא של סביבת העבודה לפני הריצה
                 deleteDir()
 
                 // משיכת הקוד מחדש

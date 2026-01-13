@@ -128,6 +128,7 @@ try:
     
     
     # === קריאת קבצים ===
+    logger.info("load files")
     df = pd.read_excel(excel_file, dtype={"name": str}) #הקובץ היומי של חיובי הזכיינים
     df["productid"] = df["productid"].astype(str).str.strip()     #המרת מספר המוצר למחרוזת
     df["linename"] = df["linename"].astype(str).str.strip()
@@ -504,6 +505,7 @@ try:
     
     
         doc.build(elements, canvasmaker=NumberedCanvas)
+        logger.info("report created!")
     
     
     master_writer = PdfWriter()
@@ -541,6 +543,7 @@ try:
     #הוספת העמוד של השוקו מרמת החייל
     cats_to_extra = ["משקאות ושוקו"] # קטגוריות של תנובה להוספה מרמת החייל
     add_pages_to_master(lambda x: x['group'] == "4" and x['supplier'] == "1" and x['category'] in cats_to_extra)
+    logger.info("master file created")
     
     
     
