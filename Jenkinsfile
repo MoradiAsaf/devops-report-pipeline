@@ -160,7 +160,7 @@ pipeline {
                             subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER}",
                             body: "The pipeline run #${BUILD_NUMBER} has finished with status: ${currentBuild.currentResult}.\nPlease find the attached report for full details.",
                             from: "moradiasaf@gmail.com",
-                            attachmentsPattern: 'report.html' 
+                            attachmentsPattern: '**/report.html' 
                         )
                         }
                     }
