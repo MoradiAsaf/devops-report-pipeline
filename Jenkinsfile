@@ -123,6 +123,14 @@ pipeline {
                     body: '${FILE,path="report.html"}'
                 )
             }
+            script {
+            if (params.RUN_ON == 'windows') {
+                bat 'py -3 main.py --refresh-html --log-file %LOG_FILE%'
+            } else {
+                sh 'python3 main.py --refresh-html --log-file ${LOG_FILE}'
+            }
+        }
+
         }
 
         // 📦 ארכוב דוחות + לוגים  ← עכשיו זה אחרי כל הכתיבות

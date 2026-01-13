@@ -24,12 +24,39 @@ import traceback
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--date", required=True, help="Date in format YYYY-MM-DD")
+
+parser.add_argument("--date", help="Date in format DD.MM.YYYY")
 parser.add_argument("--log-file", required=False, help="Path to log file")
+parser.add_argument("--refresh-html", action="store_true", help="Refresh HTML report from final log only")
+
 args = parser.parse_args()
+
 
 run_date = args.date
 excel_file = f"{run_date}.xlsx"
+
+# ================= REFRESH HTML MODE =================
+if args.refresh_html:
+
+    if not args.log_file or not os.path.exists(args.log_file):
+        print("❌ --refresh-html requires existing --log-file")
+        sys.exit(1)
+
+    from glob import glob
+
+    pdf_files = glob("pdf_reports/**/*.pdf", recursive=True)
+
+    create_html_report(
+        pdf_files=pdf_files,
+        log_file=args.log_file,
+        success=True
+    )
+
+    print("✅ HTML report refreshed from final log")
+    sys.exit(0)
+# =====================================================
+
+
 
 logger = logging.getLogger("devops-report")
 logger.setLevel(logging.DEBUG)
