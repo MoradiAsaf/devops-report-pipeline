@@ -131,7 +131,7 @@ excel_file = f"{run_date}.xlsx"
 if args.refresh_html:
 
     if not args.log_file or not os.path.exists(args.log_file):
-        print("❌ --refresh-html requires existing --log-file")
+        print(" --refresh-html requires existing --log-file")
         sys.exit(1)
 
     from glob import glob
@@ -144,7 +144,7 @@ if args.refresh_html:
         success=True
     )
 
-    print("✅ HTML report refreshed from final log")
+    print(" HTML report refreshed from final log")
     sys.exit(0)
 # =====================================================
 
