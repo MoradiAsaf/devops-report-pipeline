@@ -76,41 +76,40 @@ pipeline {
             }
 
             post {
-                always {
+    always {
 
-                    // ===== סיום לוג =====
-                    script {
-                        if (params.RUN_ON == 'windows') {
-                            bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
-                        } else {
-                            sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
-                        }
-                    }
-
-                    // 📦 ארכוב דוחות + לוגים
-                    archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
-
-                    // 🌐 פרסום דוח HTML
-                    publishHTML(target: [
-                        reportName : "Reports",
-                        reportDir  : ".",
-                        reportFiles: "report.html",
-                        keepAll    : true,
-                        alwaysLinkToLastBuild: true,
-                        allowMissing: false
-                    ])
-                }
+        // ===== סיום לוג =====
+        script {
+            if (params.RUN_ON == 'windows') {
+                bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
+            } else {
+                sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
             }
-            post {
-                always {
-                    emailext(
-                        to: "${params.REPORT_EMAIL}",
-                        subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER} - ${currentBuild.currentResult}",
-                        mimeType: 'text/html',
-                        body: '${FILE,path="report.html"}'
-                    )
-                }
-                }
+        }
+
+        // 📦 ארכוב דוחות + לוגים
+        archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
+
+        // 🌐 פרסום דוח HTML
+        publishHTML(target: [
+            reportName : "Reports",
+            reportDir  : ".",
+            reportFiles: "report.html",
+            keepAll    : true,
+            alwaysLinkToLastBuild: true,
+            allowMissing: false
+        ])
+
+        // 📧 שליחת מייל עם הדוח
+        emailext(
+            to: "${params.REPORT_EMAIL}",
+            subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER} - ${currentBuild.currentResult}",
+            mimeType: 'text/html',
+            body: '${FILE,path="report.html"}'
+        )
+    }
+}
+
 
         }
     }
