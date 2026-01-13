@@ -163,7 +163,7 @@ pipeline {
                                 mail (
                                     to: env.MAIL_VALUE,
                                     from: "moradiasaf@gmail.com",
-                                    subject: "Tasty Morning Report: Build #${BUILD_NUMBER} is ${currentBuild.currentResult}",
+                                    subject: "Jenkins Report: Build #${BUILD_NUMBER} is ${currentBuild.currentResult}",
                                     body: """The pipeline run #${BUILD_NUMBER} has finished with status: ${currentBuild.currentResult}.
                         Please find the report here for full details: ${reportUrl}""",
                                 )
