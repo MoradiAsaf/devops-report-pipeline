@@ -154,6 +154,13 @@ pipeline {
                             } else {
                                 sh "echo \"[MAIL] Sending final report email to: ${env.MAIL_VALUE}\" | tee -a ${LOG_FILE}"
                             }
+                            if (env.MAIL_OK == "true") {
+                                
+                            if (params.RUN_ON == 'windows') {
+                                bat "dir report.html" 
+                            } else {
+                                sh "ls -l report.html"
+                            }
 
                            mail (
                             to: env.MAIL_VALUE,
