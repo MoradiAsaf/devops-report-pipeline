@@ -155,18 +155,12 @@ pipeline {
                                 sh "echo \"[MAIL] Sending final report email to: ${env.MAIL_VALUE}\" | tee -a ${LOG_FILE}"
                             }
 
-                           emailext(
-                                to: env.MAIL_VALUE,
-                                from: "moradiasaf@gmail.com", // הגדרה מפורשת של השולח
-                                subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER}",
-                                mimeType: 'text/html',
-                                body: """
-                                    <h3>Build ${BUILD_NUMBER} Finished</h3>
-                                    <p>Status: ${currentBuild.currentResult}</p>
-                                    <p>Check the attached report or view it in Jenkins.</p>
-                                    ${readFile 'report.html'} 
-                                """
-                            )
+                           mail (
+                            to: env.MAIL_VALUE,
+                            subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER}",
+                            body: "היי אסף, הפייפליין של 'טרי על הבוקר' הסתיים בהצלחה.\n\nסטטוס: ${currentBuild.currentResult}\nניתן לראות את הדוחות המצורפים בתוך ג'נקינס.",
+                            from: "moradiasaf@gmail.com"
+                        )
                         }
                     }
                 }
