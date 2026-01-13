@@ -154,6 +154,8 @@ pipeline {
                             } else {
                                 sh "echo \"[MAIL] Sending final report email to: ${env.MAIL_VALUE}\" | tee -a ${LOG_FILE}"
                             
+                            }
+
                             def reportUrl = "${env.PUBLIC_BASE_URL}/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/HTML_20Report/"
 
                                 echo "📧 Sending report link to: ${env.MAIL_VALUE}"
