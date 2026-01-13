@@ -23,78 +23,6 @@ from logging.handlers import RotatingFileHandler
 import traceback
 
 
-parser = argparse.ArgumentParser()
-
-parser.add_argument("--date", help="Date in format DD.MM.YYYY")
-parser.add_argument("--log-file", required=False, help="Path to log file")
-parser.add_argument("--refresh-html", action="store_true", help="Refresh HTML report from final log only")
-
-args = parser.parse_args()
-
-
-run_date = args.date
-excel_file = f"{run_date}.xlsx"
-
-# ================= REFRESH HTML MODE =================
-if args.refresh_html:
-
-    if not args.log_file or not os.path.exists(args.log_file):
-        print("❌ --refresh-html requires existing --log-file")
-        sys.exit(1)
-
-    from glob import glob
-
-    pdf_files = glob("pdf_reports/**/*.pdf", recursive=True)
-
-    create_html_report(
-        pdf_files=pdf_files,
-        log_file=args.log_file,
-        success=True
-    )
-
-    print("✅ HTML report refreshed from final log")
-    sys.exit(0)
-# =====================================================
-
-
-
-logger = logging.getLogger("devops-report")
-logger.setLevel(logging.DEBUG)
-logger.handlers.clear()
-
-formatter = logging.Formatter(
-    "%(asctime)s | %(levelname)-8s | %(message)s",
-    "%Y-%m-%d %H:%M:%S"
-)
-
-# Console (Jenkins)
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(logging.INFO)
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-
-# File (if provided)
-if args.log_file:
-    log_path = Path(args.log_file)
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-
-    fh = RotatingFileHandler(log_path, maxBytes=5_000_000, backupCount=3, encoding="utf-8")
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-
-logger.info("===== PYTHON STARTED =====")
-logger.info(f"Run date: {run_date}")
-logger.info(f"Excel file: {excel_file}")
-# ---------------------------------
-
-if not os.path.exists(excel_file):
-    logger.error(f"File not found: {excel_file}")
-    sys.exit(1)
-
-logger.info(f"Using file: {excel_file}")
-
-
 def create_html_report(pdf_files, log_file=None, success=True):
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     system = platform.system()
@@ -184,6 +112,81 @@ def create_html_report(pdf_files, log_file=None, success=True):
 
     with open("report.html", "w", encoding="utf-8") as f:
         f.write(html_content)
+
+
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--date", help="Date in format DD.MM.YYYY")
+parser.add_argument("--log-file", required=False, help="Path to log file")
+parser.add_argument("--refresh-html", action="store_true", help="Refresh HTML report from final log only")
+
+args = parser.parse_args()
+
+
+run_date = args.date
+excel_file = f"{run_date}.xlsx"
+
+# ================= REFRESH HTML MODE =================
+if args.refresh_html:
+
+    if not args.log_file or not os.path.exists(args.log_file):
+        print("❌ --refresh-html requires existing --log-file")
+        sys.exit(1)
+
+    from glob import glob
+
+    pdf_files = glob("pdf_reports/**/*.pdf", recursive=True)
+
+    create_html_report(
+        pdf_files=pdf_files,
+        log_file=args.log_file,
+        success=True
+    )
+
+    print("✅ HTML report refreshed from final log")
+    sys.exit(0)
+# =====================================================
+
+
+
+logger = logging.getLogger("devops-report")
+logger.setLevel(logging.DEBUG)
+logger.handlers.clear()
+
+formatter = logging.Formatter(
+    "%(asctime)s | %(levelname)-8s | %(message)s",
+    "%Y-%m-%d %H:%M:%S"
+)
+
+# Console (Jenkins)
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.INFO)
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
+# File (if provided)
+if args.log_file:
+    log_path = Path(args.log_file)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fh = RotatingFileHandler(log_path, maxBytes=5_000_000, backupCount=3, encoding="utf-8")
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+logger.info("===== PYTHON STARTED =====")
+logger.info(f"Run date: {run_date}")
+logger.info(f"Excel file: {excel_file}")
+# ---------------------------------
+
+if not os.path.exists(excel_file):
+    logger.error(f"File not found: {excel_file}")
+    sys.exit(1)
+
+logger.info(f"Using file: {excel_file}")
+
+
 
 try: 
     # === רישום פונט עברי ===
