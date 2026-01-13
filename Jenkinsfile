@@ -1,3 +1,9 @@
+// ===== פונקציית ולידציית מייל  =====
+def isValidEmail(String email) {
+    if (!email) return false
+    return email ==~ /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+}
+
 pipeline {
     agent none
 
@@ -19,13 +25,10 @@ pipeline {
 
             steps {
 
-                //  ניקוי מלא של סביבת העבודה לפני הריצה
                 deleteDir()
-
-                // משיכת הקוד מחדש
                 checkout scm
 
-                // ===== יצירת לוג אחרי הניקוי =====
+                // ===== יצירת לוג =====
                 script {
                     if (params.RUN_ON == 'windows') {
                         bat """
@@ -46,9 +49,9 @@ pipeline {
 
                 script {
                     if (params.RUN_ON == 'windows') {
-                        bat 'echo Workspace cleaned repo checked out >> %LOG_FILE%'
+                        bat 'echo Workspace cleaned & repo checked out >> %LOG_FILE%'
                     } else {
-                        sh 'echo "Workspace cleaned & repo checked out" >> ${LOG_FILE}'
+                        sh 'echo "Workspace cleaned & repo checked out" | tee -a ${LOG_FILE}'
                     }
                 }
 
@@ -64,53 +67,78 @@ pipeline {
                 // ===== הרצת הסקריפט =====
                 script {
                     if (params.RUN_ON == 'windows') {
-                        bat """
-                        py -3 main.py --date %RUN_DATE% --log-file %LOG_FILE%
-                        """
+                        bat 'py -3 main.py --date %RUN_DATE% --log-file %LOG_FILE%'
                     } else {
-                        sh """
-                       python3 main.py --date ${RUN_DATE} --log-file ${LOG_FILE}
-                        """
+                        sh 'python3 main.py --date ${RUN_DATE} --log-file ${LOG_FILE}'
                     }
                 }
             }
 
             post {
-    always {
+                always {
 
-        // ===== סיום לוג =====
-        script {
-            if (params.RUN_ON == 'windows') {
-                bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
-            } else {
-                sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
+                    // ===== סיום לוג =====
+                    script {
+                        if (params.RUN_ON == 'windows') {
+                            bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
+                        } else {
+                            sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
+                        }
+                    }
+
+                    // 📦 ארכוב דוחות + לוגים
+                    archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
+
+                    // 🌐 פרסום דוח HTML
+                    publishHTML(target: [
+                        reportName : "Reports",
+                        reportDir  : ".",
+                        reportFiles: "report.html",
+                        keepAll    : true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing: false
+                    ])
+
+                    // 📧 ולידציית מייל + לוג + שליחה
+                    script {
+
+                        def email = params.REPORT_EMAIL?.trim()
+                        def valid = isValidEmail(email)
+
+                        if (!email) {
+
+                            if (params.RUN_ON == 'windows') {
+                                bat 'echo [MAIL] No email address provided >> %LOG_FILE%'
+                            } else {
+                                sh 'echo "[MAIL] No email address provided" | tee -a ${LOG_FILE}'
+                            }
+
+                        } else if (!valid) {
+
+                            if (params.RUN_ON == 'windows') {
+                                bat "echo [MAIL] Invalid email address: ${email} >> %LOG_FILE%"
+                            } else {
+                                sh "echo \"[MAIL] Invalid email address: ${email}\" | tee -a ${LOG_FILE}"
+                            }
+
+                        } else {
+
+                            if (params.RUN_ON == 'windows') {
+                                bat "echo [MAIL] Valid email detected, sending report to: ${email} >> %LOG_FILE%"
+                            } else {
+                                sh "echo \"[MAIL] Valid email detected, sending report to: ${email}\" | tee -a ${LOG_FILE}"
+                            }
+
+                            emailext(
+                                to: email,
+                                subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER} - ${currentBuild.currentResult}",
+                                mimeType: 'text/html',
+                                body: '${FILE,path="report.html"}'
+                            )
+                        }
+                    }
+                }
             }
-        }
-
-        // 📦 ארכוב דוחות + לוגים
-        archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
-
-        // 🌐 פרסום דוח HTML
-        publishHTML(target: [
-            reportName : "Reports",
-            reportDir  : ".",
-            reportFiles: "report.html",
-            keepAll    : true,
-            alwaysLinkToLastBuild: true,
-            allowMissing: false
-        ])
-
-        // 📧 שליחת מייל עם הדוח
-        emailext(
-            to: "${params.REPORT_EMAIL}",
-            subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER} - ${currentBuild.currentResult}",
-            mimeType: 'text/html',
-            body: '${FILE,path="report.html"}'
-        )
-    }
-}
-
-
         }
     }
 }
