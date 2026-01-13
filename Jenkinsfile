@@ -1,4 +1,4 @@
-// ===== פונקציית ולידציית מייל  =====
+// ===== פונקציית ולידציית מייל =====
 def isValidEmail(String email) {
     if (!email) return false
     return email ==~ /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
@@ -49,7 +49,7 @@ pipeline {
 
                 script {
                     if (params.RUN_ON == 'windows') {
-                        bat 'echo Workspace cleaned and repo checked out >> %LOG_FILE%'
+                        bat 'echo "Workspace cleaned and repo checked out" >> %LOG_FILE%'
                     } else {
                         sh 'echo "Workspace cleaned & repo checked out" | tee -a ${LOG_FILE}'
                     }
@@ -75,79 +75,96 @@ pipeline {
             }
 
             post {
-    always {
+                always {
 
-        // ===== סיום לוג =====
-        script {
-            if (params.RUN_ON == 'windows') {
-                bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
-            } else {
-                sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
-            }
-        }
+                    // ===== סיום לוג =====
+                    script {
+                        if (params.RUN_ON == 'windows') {
+                            bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
+                        } else {
+                            sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
+                        }
+                    }
 
-        // 📧 ולידציית מייל + לוג + שליחה  ✅ לפני הארכוב
-        script {
+                    // ===== ולידציית מייל + כתיבה ללוג =====
+                    script {
 
-            def email = params.REPORT_EMAIL?.trim()
-            def valid = isValidEmail(email)
+                        env.MAIL_OK = "false"
+                        env.MAIL_VALUE = params.REPORT_EMAIL?.trim()
 
-            if (!email) {
+                        def email = env.MAIL_VALUE
+                        def valid = isValidEmail(email)
 
-                if (params.RUN_ON == 'windows') {
-                    bat 'echo [MAIL] No email address provided >> %LOG_FILE%'
-                } else {
-                    sh 'echo "[MAIL] No email address provided" | tee -a ${LOG_FILE}'
+                        if (!email) {
+
+                            if (params.RUN_ON == 'windows') {
+                                bat 'echo [MAIL] No email address provided >> %LOG_FILE%'
+                            } else {
+                                sh 'echo "[MAIL] No email address provided" | tee -a ${LOG_FILE}'
+                            }
+
+                        } else if (!valid) {
+
+                            if (params.RUN_ON == 'windows') {
+                                bat "echo [MAIL] Invalid email address: ${email} >> %LOG_FILE%"
+                            } else {
+                                sh "echo \"[MAIL] Invalid email address: ${email}\" | tee -a ${LOG_FILE}"
+                            }
+
+                        } else {
+
+                            env.MAIL_OK = "true"
+
+                            if (params.RUN_ON == 'windows') {
+                                bat "echo [MAIL] Valid email detected: ${email} >> %LOG_FILE%"
+                            } else {
+                                sh "echo \"[MAIL] Valid email detected: ${email}\" | tee -a ${LOG_FILE}"
+                            }
+                        }
+                    }
+
+                    // ===== רענון HTML אחרי שהלוג סופי =====
+                    script {
+                        if (params.RUN_ON == 'windows') {
+                            bat 'py -3 main.py --refresh-html --log-file %LOG_FILE%'
+                        } else {
+                            sh 'python3 main.py --refresh-html --log-file ${LOG_FILE}'
+                        }
+                    }
+
+                    // 📦 ארכוב דוחות + לוגים
+                    archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
+
+                    // 🌐 פרסום דוח HTML
+                    publishHTML(target: [
+                        reportName : "Reports",
+                        reportDir  : ".",
+                        reportFiles: "report.html",
+                        keepAll    : true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing: false
+                    ])
+
+                    // ===== שליחת מייל בסוף =====
+                    script {
+                        if (env.MAIL_OK == "true") {
+
+                            if (params.RUN_ON == 'windows') {
+                                bat "echo [MAIL] Sending final report email to: ${env.MAIL_VALUE} >> %LOG_FILE%"
+                            } else {
+                                sh "echo \"[MAIL] Sending final report email to: ${env.MAIL_VALUE}\" | tee -a ${LOG_FILE}"
+                            }
+
+                            emailext(
+                                to: env.MAIL_VALUE,
+                                subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER} - ${currentBuild.currentResult}",
+                                mimeType: 'text/html',
+                                body: '${FILE,path="report.html"}'
+                            )
+                        }
+                    }
                 }
-
-            } else if (!valid) {
-
-                if (params.RUN_ON == 'windows') {
-                    bat "echo [MAIL] Invalid email address: ${email} >> %LOG_FILE%"
-                } else {
-                    sh "echo \"[MAIL] Invalid email address: ${email}\" | tee -a ${LOG_FILE}"
-                }
-
-            } else {
-
-                if (params.RUN_ON == 'windows') {
-                    bat "echo [MAIL] Valid email detected, sending report to: ${email} >> %LOG_FILE%"
-                } else {
-                    sh "echo \"[MAIL] Valid email detected, sending report to: ${email}\" | tee -a ${LOG_FILE}"
-                }
-
-                emailext(
-                    to: email,
-                    subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER} - ${currentBuild.currentResult}",
-                    mimeType: 'text/html',
-                    body: '${FILE,path="report.html"}'
-                )
             }
-            script {
-            if (params.RUN_ON == 'windows') {
-                bat 'py -3 main.py --refresh-html --log-file %LOG_FILE%'
-            } else {
-                sh 'python3 main.py --refresh-html --log-file ${LOG_FILE}'
-            }
-        }
-
-        }
-
-        // 📦 ארכוב דוחות + לוגים  ← עכשיו זה אחרי כל הכתיבות
-        archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
-
-        // 🌐 פרסום דוח HTML
-        publishHTML(target: [
-            reportName : "Reports",
-            reportDir  : ".",
-            reportFiles: "report.html",
-            keepAll    : true,
-            alwaysLinkToLastBuild: true,
-            allowMissing: false
-        ])
-    }
-}
-
         }
     }
 }
