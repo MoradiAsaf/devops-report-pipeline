@@ -75,70 +75,71 @@ pipeline {
             }
 
             post {
-                always {
+    always {
 
-                    // ===== סיום לוג =====
-                    script {
-                        if (params.RUN_ON == 'windows') {
-                            bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
-                        } else {
-                            sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
-                        }
-                    }
-
-                    // 📦 ארכוב דוחות + לוגים
-                    archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
-
-                    // 🌐 פרסום דוח HTML
-                    publishHTML(target: [
-                        reportName : "Reports",
-                        reportDir  : ".",
-                        reportFiles: "report.html",
-                        keepAll    : true,
-                        alwaysLinkToLastBuild: true,
-                        allowMissing: false
-                    ])
-
-                    // 📧 ולידציית מייל + לוג + שליחה
-                    script {
-
-                        def email = params.REPORT_EMAIL?.trim()
-                        def valid = isValidEmail(email)
-
-                        if (!email) {
-
-                            if (params.RUN_ON == 'windows') {
-                                bat 'echo [MAIL] No email address provided >> %LOG_FILE%'
-                            } else {
-                                sh 'echo "[MAIL] No email address provided" | tee -a ${LOG_FILE}'
-                            }
-
-                        } else if (!valid) {
-
-                            if (params.RUN_ON == 'windows') {
-                                bat "echo [MAIL] Invalid email address: ${email} >> %LOG_FILE%"
-                            } else {
-                                sh "echo \"[MAIL] Invalid email address: ${email}\" | tee -a ${LOG_FILE}"
-                            }
-
-                        } else {
-
-                            if (params.RUN_ON == 'windows') {
-                                bat "echo [MAIL] Valid email detected, sending report to: ${email} >> %LOG_FILE%"
-                            } else {
-                                sh "echo \"[MAIL] Valid email detected, sending report to: ${email}\" | tee -a ${LOG_FILE}"
-                            }
-
-                            emailext(
-                                to: email,
-                                subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER} - ${currentBuild.currentResult}",
-                                mimeType: 'text/html',
-                                body: '${FILE,path="report.html"}'
-                            )
-                        }
-                    }
-                }
+        // ===== סיום לוג =====
+        script {
+            if (params.RUN_ON == 'windows') {
+                bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
+            } else {
+                sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
             }
+        }
+
+        // 📧 ולידציית מייל + לוג + שליחה  ✅ לפני הארכוב
+        script {
+
+            def email = params.REPORT_EMAIL?.trim()
+            def valid = isValidEmail(email)
+
+            if (!email) {
+
+                if (params.RUN_ON == 'windows') {
+                    bat 'echo [MAIL] No email address provided >> %LOG_FILE%'
+                } else {
+                    sh 'echo "[MAIL] No email address provided" | tee -a ${LOG_FILE}'
+                }
+
+            } else if (!valid) {
+
+                if (params.RUN_ON == 'windows') {
+                    bat "echo [MAIL] Invalid email address: ${email} >> %LOG_FILE%"
+                } else {
+                    sh "echo \"[MAIL] Invalid email address: ${email}\" | tee -a ${LOG_FILE}"
+                }
+
+            } else {
+
+                if (params.RUN_ON == 'windows') {
+                    bat "echo [MAIL] Valid email detected, sending report to: ${email} >> %LOG_FILE%"
+                } else {
+                    sh "echo \"[MAIL] Valid email detected, sending report to: ${email}\" | tee -a ${LOG_FILE}"
+                }
+
+                emailext(
+                    to: email,
+                    subject: "📊 Jenkins Report - ${JOB_NAME} #${BUILD_NUMBER} - ${currentBuild.currentResult}",
+                    mimeType: 'text/html',
+                    body: '${FILE,path="report.html"}'
+                )
+            }
+        }
+
+        // 📦 ארכוב דוחות + לוגים  ← עכשיו זה אחרי כל הכתיבות
+        archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
+
+        // 🌐 פרסום דוח HTML
+        publishHTML(target: [
+            reportName : "Reports",
+            reportDir  : ".",
+            reportFiles: "report.html",
+            keepAll    : true,
+            alwaysLinkToLastBuild: true,
+            allowMissing: false
+        ])
+    }
+}
+
         }
     }
 }
