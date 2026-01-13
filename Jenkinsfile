@@ -20,155 +20,113 @@ pipeline {
 
     stages {
 
-        stage('Run on selected agent') {
+        stage('Checkout') {
             agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
-
             steps {
-
                 deleteDir()
                 checkout scm
+            }
+        }
 
-                // ===== יצירת לוג =====
+        stage('Validate Parameters') {
+            agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
+            steps {
                 script {
                     if (params.RUN_ON == 'windows') {
-                        bat """
-                        if not exist %LOG_DIR% mkdir %LOG_DIR%
-                        echo ===== PIPELINE START ===== > %LOG_FILE%
-                        echo Build: %BUILD_NUMBER% >> %LOG_FILE%
-                        echo Date: %DATE% %TIME% >> %LOG_FILE%
-                        """
+                        bat 'if not exist %LOG_DIR% mkdir %LOG_DIR%'
+                        bat 'echo ===== PIPELINE START ===== > %LOG_FILE%'
+                        bat 'echo Build: %BUILD_NUMBER% >> %LOG_FILE%'
+                        bat 'echo Date: %DATE% %TIME% >> %LOG_FILE%'
                     } else {
-                        sh """
-                        mkdir -p ${LOG_DIR}
-                        echo "===== PIPELINE START =====" > ${LOG_FILE}
-                        echo "Build: ${BUILD_NUMBER}" >> ${LOG_FILE}
-                        date >> ${LOG_FILE}
-                        """
+                        sh '''
+                        mkdir -p logs
+                        echo "===== PIPELINE START =====" > logs/run_${BUILD_NUMBER}.log
+                        echo "Build: ${BUILD_NUMBER}" >> logs/run_${BUILD_NUMBER}.log
+                        date >> logs/run_${BUILD_NUMBER}.log
+                        '''
+                    }
+
+                    env.MAIL_OK = "false"
+                    env.MAIL_VALUE = params.REPORT_EMAIL?.trim()
+
+                    def email = env.MAIL_VALUE
+                    def valid = isValidEmail(email)
+
+                    if (!email) {
+                        echo "[MAIL] No email provided"
+                    } else if (!valid) {
+                        echo "[MAIL] Invalid email: ${email}"
+                    } else {
+                        env.MAIL_OK = "true"
+                        echo "[MAIL] Valid email: ${email}"
                     }
                 }
+            }
+        }
 
-                script {
-                    if (params.RUN_ON == 'windows') {
-                        bat 'echo "Workspace cleaned and repo checked out" >> %LOG_FILE%'
-                    } else {
-                        sh 'echo "Workspace cleaned & repo checked out" | tee -a ${LOG_FILE}'
-                    }
-                }
-
-                // ===== בדיקת פייתון =====
+        stage('Run Script') {
+            agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
+            steps {
                 script {
                     if (params.RUN_ON == 'windows') {
                         bat 'py -3 --version >> %LOG_FILE% 2>&1'
-                    } else {
-                        sh 'python3 --version | tee -a ${LOG_FILE}'
-                    }
-                }
-
-                // ===== הרצת הסקריפט =====
-                script {
-                    if (params.RUN_ON == 'windows') {
                         bat 'py -3 main.py --date %RUN_DATE% --log-file %LOG_FILE%'
                     } else {
+                        sh 'python3 --version | tee -a ${LOG_FILE}'
                         sh 'python3 main.py --date ${RUN_DATE} --log-file ${LOG_FILE}'
                     }
                 }
             }
+        }
 
-            post {
-                always {
-
-                    // ===== סיום לוג =====
-                    script {
-                        if (params.RUN_ON == 'windows') {
-                            bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
-                        } else {
-                            sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
-                        }
+        stage('Generate HTML') {
+            agent { label params.RUN_ON == 'windows' ? 'windows-agent' : 'built-in' }
+            steps {
+                script {
+                    if (params.RUN_ON == 'windows') {
+                        bat 'py -3 main.py --refresh-html --log-file %LOG_FILE%'
+                    } else {
+                        sh 'python3 main.py --refresh-html --log-file ${LOG_FILE}'
                     }
+                }
+            }
+        }
+    }
 
-                    // ===== ולידציית מייל + כתיבה ללוג =====
-                    script {
+    post {
+        always {
 
-                        env.MAIL_OK = "false"
-                        env.MAIL_VALUE = params.REPORT_EMAIL?.trim()
+            script {
+                if (params.RUN_ON == 'windows') {
+                    bat 'echo ===== PIPELINE END ===== >> %LOG_FILE%'
+                } else {
+                    sh 'echo "===== PIPELINE END =====" | tee -a ${LOG_FILE}'
+                }
+            }
 
-                        def email = env.MAIL_VALUE
-                        def valid = isValidEmail(email)
+            archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
 
-                        if (!email) {
+            publishHTML(target: [
+                reportName : "Reports",
+                reportDir  : ".",
+                reportFiles: "report.html",
+                keepAll    : true,
+                alwaysLinkToLastBuild: true,
+                allowMissing: false
+            ])
 
-                            if (params.RUN_ON == 'windows') {
-                                bat 'echo [MAIL] No email address provided >> %LOG_FILE%'
-                            } else {
-                                sh 'echo "[MAIL] No email address provided" | tee -a ${LOG_FILE}'
-                            }
+            script {
+                if (env.MAIL_OK == "true") {
 
-                        } else if (!valid) {
+                    def reportUrl = "${env.PUBLIC_BASE_URL}/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/Reports/"
 
-                            if (params.RUN_ON == 'windows') {
-                                bat "echo [MAIL] Invalid email address: ${email} >> %LOG_FILE%"
-                            } else {
-                                sh "echo \"[MAIL] Invalid email address: ${email}\" | tee -a ${LOG_FILE}"
-                            }
-
-                        } else {
-
-                            env.MAIL_OK = "true"
-
-                            if (params.RUN_ON == 'windows') {
-                                bat "echo [MAIL] Valid email detected: ${email} >> %LOG_FILE%"
-                            } else {
-                                sh "echo \"[MAIL] Valid email detected: ${email}\" | tee -a ${LOG_FILE}"
-                            }
-                        }
-                    }
-
-                    // ===== רענון HTML אחרי שהלוג סופי =====
-                    script {
-                        if (params.RUN_ON == 'windows') {
-                            bat 'py -3 main.py --refresh-html --log-file %LOG_FILE%'
-                        } else {
-                            sh 'python3 main.py --refresh-html --log-file ${LOG_FILE}'
-                        }
-                    }
-
-                    // 📦 ארכוב דוחות + לוגים
-                    archiveArtifacts artifacts: 'pdf_reports/**, report.html, logs/*.log', fingerprint: true
-
-                    // 🌐 פרסום דוח HTML
-                    publishHTML(target: [
-                        reportName : "Reports",
-                        reportDir  : ".",
-                        reportFiles: "report.html",
-                        keepAll    : true,
-                        alwaysLinkToLastBuild: true,
-                        allowMissing: false
-                    ])
-
-                    // ===== שליחת מייל בסוף =====
-                    script {
-                        if (env.MAIL_OK == "true") {
-
-                            if (params.RUN_ON == 'windows') {
-                                bat "echo [MAIL] Sending final report email to: ${env.MAIL_VALUE} >> %LOG_FILE%"
-                            } else {
-                                sh "echo \"[MAIL] Sending final report email to: ${env.MAIL_VALUE}\" | tee -a ${LOG_FILE}"
-                            
-                            }
-
-                            def reportUrl = "${env.PUBLIC_BASE_URL}/job/${env.JOB_NAME}/${env.BUILD_NUMBER}/Reports/"
-
-                                echo "📧 Sending report link to: ${env.MAIL_VALUE}"
-
-                                mail (
-                                    to: env.MAIL_VALUE,
-                                    from: "moradiasaf@gmail.com",
-                                    subject: "Jenkins Report: Build #${BUILD_NUMBER} is ${currentBuild.currentResult}",
-                                    body: """The pipeline run #${BUILD_NUMBER} has finished with status: ${currentBuild.currentResult}.
-                        Please find the report here for full details: ${reportUrl}""",
-                                )
-                        }
-                    }
+                    mail (
+                        to: env.MAIL_VALUE,
+                        from: "moradiasaf@gmail.com",
+                        subject: "Jenkins Report: Build #${BUILD_NUMBER} is ${currentBuild.currentResult}",
+                        body: """The pipeline run #${BUILD_NUMBER} has finished with status: ${currentBuild.currentResult}.
+Report link: ${reportUrl}"""
+                    )
                 }
             }
         }
