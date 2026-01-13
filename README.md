@@ -52,7 +52,7 @@ devops-report-pipeline/
   * Pipeline
   * Publish HTML Reports
   * Email Extension / Mailer
-  * Role-based Authorization (רשות)
+  * Role-based Authorization 
 
 ### Python
 
@@ -99,13 +99,6 @@ pip install -r requirements.txt
 Job → Last Build → HTML Report
 ```
 
-או קישור חיצוני (אם מוגדר):
-
-```
-https://<ngrok>/job/<JOB_NAME>/<BUILD_NUMBER>/HTML_20Report/
-```
-
----
 
 ## 📧 מיילים
 
@@ -143,7 +136,3 @@ logs/run_<BUILD_NUMBER>.log
 * Ngrok
 
 ---
-
-## 📌 הערות
-
-המערכת נבנתה כדי לדמות סביבת DevOps אמיתית, כולל לוגים, דוחות, ארכוב, פרסום ומיילים – ומתאימה לפרויקט גמר או מערכת תפעולית אמיתית.
