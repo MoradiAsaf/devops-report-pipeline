@@ -68,42 +68,45 @@ if not os.path.exists(excel_file):
 logger.info(f"Using file: {excel_file}")
 
 
-
-
-
-
 def create_html_report(pdf_files, success=True):
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     system = platform.system()
 
     links = ""
+
+    # משתני סביבה מג'נקינס
     build_url = os.environ.get("BUILD_URL", "").rstrip("/")
+    public_base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+
+    # חילוץ הנתיב של ה-job מה-BUILD_URL
+    job_path = ""
+    if "/job" in build_url:
+        job_path = build_url.split("/job", 1)[1]  # למשל: /devops-report-pipeline/52
+
+    # אם יש ngrok – נשתמש בו, אחרת ניפול חזרה ל-BUILD_URL
+    base_url = public_base or build_url
+
     pdf_files = sorted(pdf_files)
+
     for pdf in pdf_files:
         pdf_path = Path(pdf)
         filename = pdf_path.name
-
-        # ננקה נתיב ונבטיח פורמט אינטרנט
         rel_path = pdf_path.as_posix()
 
-        # נבנה קישור Jenkins artifact תקני
-        if build_url:
-            link = f"{build_url}/artifact/{rel_path}"
+        # בניית קישור תקני ל-artifact
+        if job_path:
+            link = f"{base_url}/job{job_path}/artifact/{rel_path}"
         else:
-            link = f"artifact/{rel_path}"
+            link = f"{base_url}/artifact/{rel_path}" if base_url else f"artifact/{rel_path}"
 
         links += f'<li><a href="{link}" target="_blank" rel="noopener noreferrer">{filename}</a></li>\n'
 
-    html_content = f"""
-<!DOCTYPE html>
+    html_content = f"""<!DOCTYPE html>
 <html lang="he">
 <head>
     <meta charset="UTF-8">
     <title>DevOps Report</title>
     <base target="_blank">
-
-    <meta http-equiv="Content-Security-Policy"
-          content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
 </head>
 <body>
     <h1>📊 Report System - Jenkins Run</h1>

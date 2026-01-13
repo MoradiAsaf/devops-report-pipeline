@@ -9,6 +9,7 @@ pipeline {
     environment {
         LOG_DIR  = "logs"
         LOG_FILE = "logs/run_${BUILD_NUMBER}.log"
+        PUBLIC_BASE_URL = "https://jerrica-gargantuan-nonclinically.ngrok-free.dev"
     }
 
     stages {
